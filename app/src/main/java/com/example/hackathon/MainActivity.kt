@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
                     //create a wallet
                     //BitcoinUtils().createWallet(id)
                 } else {
-                    System.out.println("towa repsonce code: " + response.code())
+                    System.out.println("towa responsse code: " + response.code())
                 }
             } else {
                 System.out.println("towa not success")
