@@ -27,6 +27,7 @@
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
 
+        <activity android:name="ShowQRCodeActivity"/>
         <activity android:name=".BarcodeReaderActivity"></activity>
         <activity android:name=".ShowAccountDetailActivity" />
         <activity

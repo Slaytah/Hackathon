@@ -1,90 +1,126 @@
 package com.example.hackathon
 
+import android.app.AlertDialog
 import android.content.Context
-import android.os.AsyncTask
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.AttributeSet
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.example.hackathon.model.WalletResponse
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-import org.json.JSONObject
 
 
 class MainActivity : AppCompatActivity() {
 
-    class FetchWalletTask(private var context: Context?, userId: String) : AsyncTask<String, String, String>() {
+    class CreateWalletTask(context: Context, userId: String) : BitcoinUtils.WalletBaseTask(context, userId) {
 
-        var id = userId
+        override fun showPreDialog() {
+
+        }
 
         override fun onPreExecute() {
-            super.onPreExecute()
+            println("towa creating wallet")
         }
 
-        override fun doInBackground(vararg params: String?): String {
+        override fun doInBackground(vararg params: String?): WalletResponse{
+            try {
+                val response = BitcoinUtils().createWallet(userId)
 
-            var response = BitcoinUtils().getWallet(id)
+                walletResponse.statusCode = response.code()
 
-            var walletDTOJsonString: String = ""
-
-
-            if (response.isSuccessful) {
-                System.out.println("towa success")
-                if (response.code() == 200) {
-                    System.out.println("towa super success")
-                    walletDTOJsonString = response?.body()?.string().toString()
-                    System.out.println("towa result = " + walletDTOJsonString)
-
-                    var getJson = JSONObject(walletDTOJsonString)
-
-                    var address = getJson.getString("address")
-                    var userId = getJson.getString("userId")
-                    var balance = getJson.getJSONObject("balance")
-                    var available = balance.getLong("available")
-                    var estimated = balance.getLong("estimated")
-
-                    var balanceDTO = BitcoinUtils.BalanceDTO(available, estimated)
-
-                    var wallet = BitcoinUtils.WalletDTO(balanceDTO, address, userId)
-                } else if (response.code() == 404 || response.code() == 500) {
-                    //create a wallet
-                    //BitcoinUtils().createWallet(id)
-                } else {
-                    System.out.println("towa repsonce code: " + response.code())
-                }
-            } else {
-                System.out.println("towa not success")
-                System.out.println("towa create result " + response)
-
-                if (response.code() == 404) {
-                    System.out.println("towa shoudl create a walle")
-                    var response2 = BitcoinUtils().createWallet(id)
-
-                    System.out.println("towa create result " + response2)
-
-                }
-
-                //response = BitcoinUtils().createWallet(id)
-
-
-            }
-            return walletDTOJsonString.toString()
-        }
-
-
-        override fun onPostExecute(walletDTOJsonString: String) {
-            super.onPostExecute(walletDTOJsonString)
-
-            if (!walletDTOJsonString.isNullOrEmpty()) {
-                walletDTOJsonString?.apply {
-                    context?.let {
-                        BitcoinUtils().startAccountDetailActivity(it, walletDTOJsonString)
+                if (response.isSuccessful) {
+                    if (response.code() == 200) {
+                        walletResponse.responseString = response.body()?.string().toString()
                     }
                 }
+            } catch (e:Exception) {
+
+            }
+            return walletResponse
+        }
+
+        override fun onPostExecute(result: WalletResponse?) {
+            println("towa code = " + result?.statusCode + " towa string = " + result?.responseString)
+        }
+    }
+
+    class FetchWalletTask(private var context: Context, userId: String) : BitcoinUtils.WalletBaseTask(context, userId) {
+        lateinit var dialog:AlertDialog
+
+        override fun showPreDialog() {
+            val builder = AlertDialog.Builder(context)
+
+            // Set the alert dialog title
+            builder.setTitle("Getting wallet..")
+
+            // Display a message on alert dialog
+            builder.setMessage("PLease hold")
+
+            // Finally, make the alert dialog using builder
+            dialog = builder.create()
+
+            // Display the alert dialog on app interface
+            dialog.show()
+        }
+
+        override fun onPreExecute() {
+            showPreDialog()
+
+            //BitcoinUtils().createWallet(id)
+        }
+
+        override fun doInBackground(vararg params: String?): WalletResponse {
+            try {
+                val response = BitcoinUtils().getWallet(userId)
+
+                walletResponse.statusCode = response.code()
+
+                if (response.isSuccessful) {
+                    if (response.code() == 200) {
+                        walletResponse.responseString = response.body()?.string().toString()
+                    }
+                }
+            } catch (e:Exception) {
+                
+            }
+            return walletResponse
+        }
+
+        override fun onPostExecute(walletResponse: WalletResponse) {
+            dialog.dismiss()
+
+            if (walletResponse.statusCode == 200) {
+                walletResponse.responseString.apply {
+                    BitcoinUtils().startAccountDetailActivity(context, walletResponse.responseString)
+                }
+            } else if (walletResponse.statusCode == 404) {
+                //create a wallet
+                val builder = AlertDialog.Builder(context)
+
+                // Set the alert dialog title
+                builder.setTitle("No wallet found for user: " + userId)
+
+                // Display a message on alert dialog
+                builder.setMessage("Would you like to create a wallet?")
+
+                // Set a positive button and its click listener on alert dialog
+                builder.setPositiveButton("YES"){dialog, which ->
+                    CreateWalletTask(context, userId).execute()
+                }
+
+                // Display a negative button on alert dialog
+                builder.setNegativeButton("No"){dialog,which ->
+
+                }
+
+                // Finally, make the alert dialog using builder
+                dialog = builder.create()
+
+                // Display the alert dialog on app interface
+                dialog.show()
             }
         }
     }
@@ -94,14 +130,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        //UI components
-        //login_button.isEnabled = false
-
-
         user_id.addTextChangedListener(object : TextWatcher {
 
             override fun afterTextChanged(s: Editable) {
-                login_button.isEnabled = !user_id.text.isEmpty()
+                login_button.isEnabled = user_id.text.isNotEmpty()
             }
 
             override fun beforeTextChanged(s: CharSequence, start: Int,
@@ -116,13 +148,8 @@ class MainActivity : AppCompatActivity() {
         })
 
         login_button.setOnClickListener {
-            var task = FetchWalletTask(this,user_id.text.toString())
-            task.execute()
+            FetchWalletTask(this,user_id.text.toString()).execute()
         }
-    }
-
-    override fun onCreateView(name: String, context: Context, attrs: AttributeSet): View? {
-        return super.onCreateView(name, context, attrs)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {

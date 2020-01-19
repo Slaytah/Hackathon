@@ -1,7 +1,10 @@
 package com.example.hackathon
 
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
+import android.os.AsyncTask
+import com.example.hackathon.model.WalletResponse
 import okhttp3.*
 
 
@@ -9,9 +12,18 @@ class BitcoinUtils {
 
     val BASE_URL = "http://cryptowalletservice.herokuapp.com"
     val GENERATE_WALLET ="/wallet"
-
     var client = OkHttpClient()
 
+    abstract class WalletBaseTask(context: Context, userId: String) :AsyncTask<String, String, WalletResponse>() {
+        val userId = userId
+        val walletResponse = WalletResponse()
+
+        open fun showPreDialog(){}
+
+        override fun doInBackground(vararg params: String?): WalletResponse {
+            return walletResponse
+        }
+    }
 
     data class BalanceDTO(
         val available: Long,
@@ -53,13 +65,16 @@ class BitcoinUtils {
 
 
     fun startAccountDetailActivity(context: Context, walletDTOJSON: String) {
-        System.out.println("towa to string" + walletDTOJSON.toString())
-
         Intent(context, ShowAccountDetailActivity::class.java).apply {
-            //System.out.println("towa user name = " + user_id.text)
-            //putExtra("tom", user_id.text)
             this.putExtra("test", walletDTOJSON)
             context.startActivity(this)
         }
     }
+
+    fun startQRCodeActivity(context: Context) {
+        Intent(context, ShowQRCodeActivity::class.java).apply {
+            context.startActivity(this)
+        }
+    }
+
 }
