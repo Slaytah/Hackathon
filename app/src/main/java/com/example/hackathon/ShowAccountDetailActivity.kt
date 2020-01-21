@@ -11,6 +11,7 @@ import org.json.JSONObject
 
 class ShowAccountDetailActivity : AppCompatActivity() {
     var scannedResult: String = ""
+    var address: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,7 +23,7 @@ class ShowAccountDetailActivity : AppCompatActivity() {
         if (!walletDTOJsonString.isNullOrEmpty()) {
             var getJson = JSONObject(walletDTOJsonString)
 
-            var address = getJson.getString("address")
+            address = getJson.getString("address")
             var userId = getJson.getString("userId")
             var balance = getJson.getJSONObject("balance")
             var available = balance.getLong("available")
@@ -41,7 +42,7 @@ class ShowAccountDetailActivity : AppCompatActivity() {
 
         receive.setOnClickListener{
             run {
-                BitcoinUtils().startQRCodeActivity(this)
+                BitcoinUtils().startQRCodeActivity(this,address)
             }
         }
     }

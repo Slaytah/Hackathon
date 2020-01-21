@@ -2,6 +2,7 @@ package com.example.hackathon
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -9,8 +10,11 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import com.example.hackathon.model.WalletResponse
+import com.google.zxing.integration.android.IntentIntegrator
+import com.google.zxing.integration.android.IntentResult
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import java.util.concurrent.TimeoutException
 
 
 class MainActivity : AppCompatActivity() {
@@ -43,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onPostExecute(result: WalletResponse?) {
-            println("towa code = " + result?.statusCode + " towa string = " + result?.responseString)
+            println("towa create wallet result: code = " + result?.statusCode + " towa string = " + result?.responseString)
         }
     }
 
@@ -84,13 +88,19 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e:Exception) {
-                
+                if (e is TimeoutException) {
+                    System.out.println("towa timeout? " + e.message)
+                } else {
+                    println("towa some kind of exceptiooon: " + e.message)
+                }
             }
             return walletResponse
         }
 
         override fun onPostExecute(walletResponse: WalletResponse) {
             dialog.dismiss()
+
+            println("towa wallet reponse: " + walletResponse.toString())
 
             if (walletResponse.statusCode == 200) {
                 walletResponse.responseString.apply {
@@ -107,7 +117,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 // Display a negative button on alert dialog
-                builder.setNegativeButton("No"){dialog,which ->
+                builder.setNegativeButton("No"){dialog, which ->
 
                 }
                 dialog = builder.create()
@@ -149,10 +159,29 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        var result: IntentResult? =
+            IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
+
+        if (result != null) {
+
+            if (result.contents != null) {
+                println("towa scan result: " + result.contents)
+            } else {
+                println("towa  scan failed")
+            }
+        } else {
+            super.onActivityResult(requestCode, resultCode, data)
+        }
+    }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
+
+        println("towa on options item selectedd...")
+        BitcoinUtils().startQRCodeActivity(this, "arseholes")
         return when (item.itemId) {
             R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)

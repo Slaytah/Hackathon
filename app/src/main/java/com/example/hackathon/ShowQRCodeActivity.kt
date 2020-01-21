@@ -13,17 +13,18 @@ class ShowQRCodeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val bitcoinAddress = intent.getStringExtra("bitcoinaddress")
+
         setContentView(R.layout.show_qrcode_activity)
 
-        createQRCode("")
+        createQRCode(bitcoinAddress)
     }
 
 
     fun createQRCode(code: String) {
-        val content = "bitcoin:3J98t1WpEZ73CNmQviecrnyiWrnqRhWNLy"
 
         val writer = QRCodeWriter()
-        val bitMatrix = writer.encode(content, BarcodeFormat.QR_CODE, 512, 512)
+        val bitMatrix = writer.encode(code, BarcodeFormat.QR_CODE, 512, 512)
         val width = bitMatrix.width
         val height = bitMatrix.height
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
