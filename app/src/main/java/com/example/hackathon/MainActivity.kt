@@ -100,13 +100,8 @@ class MainActivity : AppCompatActivity() {
                 //create a wallet
                 val builder = AlertDialog.Builder(context)
 
-                // Set the alert dialog title
                 builder.setTitle("No wallet found for user: " + userId)
-
-                // Display a message on alert dialog
                 builder.setMessage("Would you like to create a wallet?")
-
-                // Set a positive button and its click listener on alert dialog
                 builder.setPositiveButton("YES"){dialog, which ->
                     CreateWalletTask(context, userId).execute()
                 }
@@ -115,11 +110,7 @@ class MainActivity : AppCompatActivity() {
                 builder.setNegativeButton("No"){dialog,which ->
 
                 }
-
-                // Finally, make the alert dialog using builder
                 dialog = builder.create()
-
-                // Display the alert dialog on app interface
                 dialog.show()
             }
         }
