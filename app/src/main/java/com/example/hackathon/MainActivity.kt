@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
             builder.setTitle("Getting wallet..")
 
             // Display a message on alert dialog
-            builder.setMessage("PLease hold")
+            builder.setMessage("Please hold")
 
             // Finally, make the alert dialog using builder
             dialog = builder.create()
