@@ -19,40 +19,28 @@ import java.util.concurrent.TimeoutException
 
 class MainActivity : AppCompatActivity() {
 
-    class CreateWalletTask(context: Context, userId: String) : BitcoinUtils.WalletBaseTask(context, userId) {
+    var bitcoinAddress:String? = null
+    var bitcoinUtils: BitcoinUtils? = null
+    var bitcoinJson:String? = null
 
-        override fun showPreDialog() {
-
-        }
-
-        override fun onPreExecute() {
-            println("towa creating wallet")
-        }
-
-        override fun doInBackground(vararg params: String?): WalletResponse{
-            try {
-                val response = BitcoinUtils().createWallet(userId)
-
-                walletResponse.statusCode = response.code()
-
-                if (response.isSuccessful) {
-                    if (response.code() == 200) {
-                        walletResponse.responseString = response.body()?.string().toString()
-                    }
-                }
-            } catch (e:Exception) {
-
-            }
-            return walletResponse
-        }
-
-        override fun onPostExecute(result: WalletResponse?) {
-            println("towa create wallet result: code = " + result?.statusCode + " towa string = " + result?.responseString)
-        }
+    companion object {
+        var PRIVATE_MODE = 0
+        val PREF_NAME = "bitcoin-hackathon"
+        val WALLET_PREF_KEY ="wallet"
     }
 
     class FetchWalletTask(private var context: Context, userId: String) : BitcoinUtils.WalletBaseTask(context, userId) {
-        lateinit var dialog:AlertDialog
+        lateinit var dialog: AlertDialog
+
+        companion object {
+
+            fun startAccountDetailActivity(context: Context, walletDTOJSON: String) {
+                Intent(context, ShowAccountDetailActivity::class.java).apply {
+                    this.putExtra("test", walletDTOJSON)
+                    context.startActivity(this)
+                }
+            }
+        }
 
         override fun showPreDialog() {
             val builder = AlertDialog.Builder(context)
@@ -103,8 +91,11 @@ class MainActivity : AppCompatActivity() {
             println("towa wallet reponse: " + walletResponse.toString())
 
             if (walletResponse.statusCode == 200) {
-                walletResponse.responseString.apply {
-                    BitcoinUtils().startAccountDetailActivity(context, walletResponse.responseString)
+                walletResponse.responseString.let {
+                    val editor = context.applicationContext.getSharedPreferences(MainActivity.PREF_NAME, MainActivity.PRIVATE_MODE ).edit()
+                    editor.putString(WALLET_PREF_KEY, walletResponse.responseString)
+                    editor.commit()
+                    startAccountDetailActivity(context, walletResponse.responseString)
                 }
             } else if (walletResponse.statusCode == 404) {
                 //create a wallet
@@ -113,7 +104,7 @@ class MainActivity : AppCompatActivity() {
                 builder.setTitle("No wallet found for user: " + userId)
                 builder.setMessage("Would you like to create a wallet?")
                 builder.setPositiveButton("YES"){dialog, which ->
-                    CreateWalletTask(context, userId).execute()
+                    BitcoinUtils.CreateWalletTask(context, userId).execute()
                 }
 
                 // Display a negative button on alert dialog
@@ -148,8 +139,17 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        bitcoinUtils = BitcoinUtils()
+
         login_button.setOnClickListener {
             FetchWalletTask(this,user_id.text.toString()).execute()
+        }
+
+        //see if we have a downloaded wallet
+        val walletString = getSharedPreferences(PREF_NAME, PRIVATE_MODE).getString(WALLET_PREF_KEY,"")
+
+        walletString.let {
+            println("towa wallet string: " + walletString)
         }
     }
 
@@ -181,10 +181,23 @@ class MainActivity : AppCompatActivity() {
         // as you specify a parent activity in AndroidManifest.xml.
 
         println("towa on options item selectedd...")
-        BitcoinUtils().startQRCodeActivity(this, "arseholes")
-        return when (item.itemId) {
-            R.id.action_settings -> true
-            else -> super.onOptionsItemSelected(item)
+
+        bitcoinAddress?.let {
+            startQRCodeActivity(this, "arseholes")
+            return when (item.itemId) {
+                R.id.action_settings -> true
+                else -> super.onOptionsItemSelected(item)
+            }
+        }
+        return false
+    }
+
+
+    fun startQRCodeActivity(context: Context, bitcoinAddress: String) {
+        println("towa bitcoin address" + bitcoinAddress)
+        Intent(context, ShowQRCodeActivity::class.java).apply {
+            this.putExtra("bitcoinaddress", bitcoinAddress)
+            context.startActivity(this)
         }
     }
 }

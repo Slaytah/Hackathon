@@ -7,17 +7,16 @@ import com.example.hackathon.model.WalletResponse
 import okhttp3.*
 import java.util.concurrent.TimeUnit
 
+const val TIMEOUT = 30L
 
 class BitcoinUtils {
-
     val BASE_URL = "http://cryptowalletservice.herokuapp.com"
     val WALLET ="/wallet"
     val PAYMENT ="/payment"
     var client = OkHttpClient().newBuilder()
-        .connectTimeout(20 , TimeUnit.SECONDS)
-        .readTimeout(20, TimeUnit.SECONDS)
+        .connectTimeout(TIMEOUT , TimeUnit.SECONDS)
+        .readTimeout(TIMEOUT, TimeUnit.SECONDS)
         .build()
-
 
     abstract class WalletBaseTask(context: Context, userId: String) :AsyncTask<String, String, WalletResponse>() {
         val userId = userId
@@ -27,6 +26,38 @@ class BitcoinUtils {
 
         override fun doInBackground(vararg params: String?): WalletResponse {
             return walletResponse
+        }
+    }
+
+    class CreateWalletTask(context: Context, userId: String) : BitcoinUtils.WalletBaseTask(context, userId) {
+
+        override fun showPreDialog() {
+
+        }
+
+        override fun onPreExecute() {
+            println("towa creating wallet")
+        }
+
+        override fun doInBackground(vararg params: String?): WalletResponse{
+            try {
+                val response = BitcoinUtils().createWallet(userId)
+
+                walletResponse.statusCode = response.code()
+
+                if (response.isSuccessful) {
+                    if (response.code() == 200) {
+                        walletResponse.responseString = response.body()?.string().toString()
+                    }
+                }
+            } catch (e:Exception) {
+
+            }
+            return walletResponse
+        }
+
+        override fun onPostExecute(result: WalletResponse?) {
+            println("towa create wallet result: code = " + result?.statusCode + " towa string = " + result?.responseString)
         }
     }
 
@@ -51,7 +82,7 @@ class BitcoinUtils {
     }
 
     fun makePayment(address: String, amount: String) {
-        
+
     }
 
     fun getWallet(userId:String) : Response{
@@ -64,18 +95,4 @@ class BitcoinUtils {
         return client.newCall(request).execute()
     }
 
-    fun startAccountDetailActivity(context: Context, walletDTOJSON: String) {
-        Intent(context, ShowAccountDetailActivity::class.java).apply {
-            this.putExtra("test", walletDTOJSON)
-            context.startActivity(this)
-        }
-    }
-
-    fun startQRCodeActivity(context: Context, bitcoinAddress: String) {
-        println("towa bitcoin address" + bitcoinAddress)
-        Intent(context, ShowQRCodeActivity::class.java).apply {
-            this.putExtra("bitcoinaddress", bitcoinAddress)
-            context.startActivity(this)
-        }
-    }
 }
