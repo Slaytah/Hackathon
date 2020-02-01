@@ -158,7 +158,7 @@ class ShowAccountDetailActivity : AppCompatActivity() {
                 println("towa scan result: " + result.contents + "request code: " + requestCode)
                 scannedResult = result.contents
             } else {
-                println("towa  scan failed")
+                println("towa  scan failedddd")
             }
         } else {
             super.onActivityResult(requestCode, resultCode, data)
